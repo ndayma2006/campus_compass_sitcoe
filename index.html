@@ -16,7 +16,7 @@
     <!-- App Custom Stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
-    <body>
+<body>
 
     <div class="app-container">
         <!-- Header -->
@@ -44,6 +44,11 @@
                 <button class="btn-mic" id="btnVoiceSearch" title="Voice Search/Navigation">
                     <svg viewBox="0 0 24 24" class="mic-icon"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" fill="currentColor"/></svg>
                 </button>
+                <select id="voiceLanguageSelect" class="voice-lang-select" title="Voice Search Language">
+                    <option value="en-US" selected>🇺🇸 English</option>
+                    <option value="hi-IN">🇮🇳 Hindi (हिंदी)</option>
+                    <option value="mr-IN">🇮🇳 Marathi (मराठी)</option>
+                </select>
             </div>
             <!-- Search Results Suggestions Dropdown -->
             <div class="search-suggestions" id="searchSuggestions"></div>
@@ -126,7 +131,48 @@
                 </button>
             </div>
         </section>
- <!-- Interactive Map Section -->
+
+        <!-- Emergency & Nearby Services Section -->
+        <section class="emergency-section card">
+            <div class="emergency-header">
+                <h2 class="section-title text-red">⚠️ Emergency & Nearby Services</h2>
+            </div>
+            <div class="emergency-grid">
+                <div class="emergency-card">
+                    <div class="emergency-icon-circle">🏥</div>
+                    <div class="emergency-details">
+                        <h3>Nearest Hospital</h3>
+                        <h4 id="hospital-name">Sharad Ayurved Hospital (Yadrav)</h4>
+                        <p class="emergency-desc">Located right next to the SITCOE campus.</p>
+                        <p class="emergency-phone">📞 Phone: <a href="tel:02322-253000">02322-253000</a></p>
+                    </div>
+                    <div class="emergency-actions">
+                        <button class="btn btn-emergency-nav" onclick="navigateEmergency('hospital')">
+                            <svg viewBox="0 0 24 24" class="nav-btn-icon"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" fill="currentColor"/></svg>
+                            <span>Draw Path</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="emergency-card">
+                    <div class="emergency-icon-circle">🚓</div>
+                    <div class="emergency-details">
+                        <h3>Nearest Police Station</h3>
+                        <h4 id="police-name">Shivaji Nagar Police Station</h4>
+                        <p class="emergency-desc">Serving the Yadrav/Ichalkaranji sector.</p>
+                        <p class="emergency-phone">📞 Phone: <a href="tel:0230-2432000">0230-2432000</a></p>
+                    </div>
+                    <div class="emergency-actions">
+                        <button class="btn btn-emergency-nav" onclick="navigateEmergency('police')">
+                            <svg viewBox="0 0 24 24" class="nav-btn-icon"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z" fill="currentColor"/></svg>
+                            <span>Draw Path</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Interactive Map Section -->
         <section class="map-section card">
             <div id="map"></div>
         </section>
@@ -183,11 +229,53 @@
                 <button class="btn btn-close-voice" id="btnCloseVoice">Cancel</button>
             </div>
         </div>
+
+        <!-- Floating AI Assistant Toggle Button -->
+        <button class="ai-chat-toggle" id="btnAIChatToggle" title="Ask Campus AI Assistant">
+            <div class="ai-toggle-icon">🤖</div>
+            <span class="ai-toggle-label">AI Assistant</span>
+        </button>
+
+        <!-- AI Assistant Panel -->
+        <div class="ai-chat-panel" id="aiChatPanel" style="display: none;">
+            <div class="ai-chat-header">
+                <div class="ai-header-title">
+                    <div class="ai-avatar-container">
+                        <span class="ai-avatar-dot"></span>
+                        <span class="ai-avatar-face">🤖</span>
+                    </div>
+                    <div class="ai-header-text">
+                        <h3>SITCOE Campus AI</h3>
+                        <p>Smart Navigation Helper</p>
+                    </div>
+                </div>
+                <button class="btn-close-ai" id="btnCloseAIChat" title="Close Chat">&times;</button>
+            </div>
+            
+            <div class="ai-chat-messages" id="aiChatMessages">
+                <div class="chat-message assistant">
+                    <p>👋 Hello! I'm your SITCOE Campus AI Assistant. How can I help you navigate the campus today?</p>
+                    <p>You can ask me to:
+                        <ul class="chat-suggestions">
+                            <li onclick="setChatQuery('Where is Dr. Patil\'s cabin?')">🔍 Find Dr. Patil's cabin</li>
+                            <li onclick="setChatQuery('Take me to the AI Lab')">🔬 Navigate to the AI Lab</li>
+                            <li onclick="setChatQuery('Where is the principal\'s cabin?')">💼 Show Principal's cabin</li>
+                            <li onclick="setChatQuery('How to reach room 43 in CSE?')">🏫 Go to CSE Room 43</li>
+                        </ul>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="ai-chat-input-area">
+                <input type="text" id="aiChatInput" placeholder="Ask SITCOE AI (e.g. 'Where is OS Lab?')..." autocomplete="off">
+                <button class="btn-ai-send" id="btnAISend" title="Send Message">
+                    <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" fill="currentColor"/></svg>
+                </button>
+            </div>
+        </div>
     </div>
-<footer>
-    <p>© 2026 Campus Compass - SITCOE</p>
-    <p>Helping students navigate the campus with ease.</p>
-</footer>
+
+
     <!-- Leaflet Map JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     
@@ -195,5 +283,3 @@
     <script src="script.js"></script>
 </body>
 </html>
-
-
