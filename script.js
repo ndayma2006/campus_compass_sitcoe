@@ -19,11 +19,13 @@ let map, routeLayer, userMarkerLayer;
 
 let departments = {
     "CSE": {
-        38: [16.70790, 74.47940],
-        43: [16.70791, 74.47941],
-        44: [16.70792, 74.47942],
-        45: [16.70793, 74.47943],
-        60: [16.70794, 74.47944]
+        39: [16.70791, 74.47941],
+        40: [16.70792, 74.47942],
+        41: [16.70793, 74.47943],
+        43: [16.70794, 74.47944],
+        44: [16.70795, 74.47945],
+        45: [16.70796, 74.47946],
+        60: [16.70797, 74.47947]
     },
     "MECH": {
         21: [16.70770, 74.47920],
@@ -65,14 +67,25 @@ let departments = {
 
 let Lab = {
     "CSE": {
-        59: { name: "Project Lab", coord: [16.70795, 74.47945] },
-        58: { name: "Programming Lab", coord: [16.70796, 74.47946] },
-        56: { name: "Network Lab", coord: [16.70797, 74.47947] },
-        55: { name: "Web Lab", coord: [16.70798, 74.47948] },
-        54: { name: "OS Lab", coord: [16.70799, 74.47949] },
-        53: { name: "HOD Office", coord: [16.70800, 74.47950] },
-        52: { name: "Language Lab", coord: [16.70802, 74.47952] },
-        51: { name: "DB Lab", coord: [16.70803, 74.47953] }
+       37: { name: "Back-up Generator Room", coord: [16.70789, 74.47939] },
+        38: { name: "VLSI & Embedded System Laboratory", coord: [16.70790, 74.47940] },
+        42: { name: "Research & Development Center", coord: [16.70793, 74.47943] },
+        51: { name: "Database Laboratory", coord: [16.70803, 74.47953] },
+        52: { name: "Web Technology Laboratory", coord: [16.70802, 74.47952] },
+        "53A": { name: "Faculty Cabin 53A", coord: [16.70803, 74.47953] },
+        "53B": { name: "Faculty Cabin 53B", coord: [16.70804, 74.47954] },
+        "53C": { name: "Faculty Cabin 53C", coord: [16.70805, 74.47955] },
+        "53D": { name: "Faculty Cabin 53D", coord: [16.70806, 74.47956] },
+        "53E": { name: "Server Room", coord: [16.70805, 74.47955] },
+        54: { name: "Operating System Laboratory", coord: [16.70799, 74.47949] },
+        55: { name: "Micro Processor Laboratory", coord: [16.70798, 74.47948] },
+        56: { name: "Computer Network Laboratory", coord: [16.70797, 74.47947] },
+        57: { name: "Language Laboratory - 1", coord: [16.70801, 74.47951] },
+        58: { name: "Programming Laboratory", coord: [16.70796, 74.47946] },
+        59: { name: "Project Laboratory", coord: [16.70795, 74.47945] },
+        "HOD Office": { name: "HOD Office", coord: [16.70800, 74.47950] },
+        "Dept. Office": { name: "Department Office", coord: [16.70801, 74.47951] },
+        "Dept. Library": { name: "Department Library", coord: [16.70802, 74.47952] }
     },
     "MECH": {
         201: { name: "Thermal Lab", coord: [16.70780, 74.47930] },
@@ -105,7 +118,7 @@ let faculty = {
         {
             name: "Dr. A. B. Patil",
             designation: "Professor & HOD",
-            cabin: "HOD Office (Room 53)",
+            cabin: "HOD Office",
             subject: "Computer Networks & Wireless Communication",
             image: "faculty-image-placeholder.jpg",
             coord: [16.70800, 74.47950]
@@ -113,7 +126,7 @@ let faculty = {
         {
             name: "Prof. P. Q. Deshmukh",
             designation: "Assistant Professor",
-            cabin: "OS Lab (Room 54)",
+            cabin: "Operating System Laboratory (Room 54)",
             subject: "Operating Systems",
             image: "faculty-image-placeholder.jpg",
             coord: [16.70799, 74.47949]
@@ -121,7 +134,7 @@ let faculty = {
         {
             name: "Prof. S. R. Mane",
             designation: "Assistant Professor",
-            cabin: "Programming Lab (Room 58)",
+            cabin: "Programming Laboratory (Room 58)",   
             subject: "Java Programming",
             image: "faculty-image-placeholder.jpg",
             coord: [16.70796, 74.47946]
