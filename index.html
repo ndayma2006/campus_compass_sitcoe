@@ -126,4 +126,71 @@
                 </button>
             </div>
         </section>
+ <!-- Interactive Map Section -->
+        <section class="map-section card">
+            <div id="map"></div>
+        </section>
+
+
+        <!-- Dynamic Content Deck (Visible after department selection) -->
+        <main class="content-deck" id="contentDeck" style="display: none;">
+            <div class="deck-header">
+                <h2 id="selectedDeptName">Department Workspace</h2>
+                <button class="btn btn-close" onclick="closeWorkspace()">&times; Close</button>
+            </div>
+            
+            <div class="deck-grid">
+                <!-- Classrooms Panel -->
+                <div class="deck-card-panel classroom-panel">
+                    <h3>Classrooms</h3>
+                    <div class="badges-grid" id="classroomsList">
+                        <!-- Dynamic classroom badges -->
+                    </div>
+                </div>
+
+                <!-- Labs Panel -->
+                <div class="deck-card-panel labs-panel">
+                    <h3>Laboratories</h3>
+                    <div class="labs-list" id="labsList">
+                        <!-- Dynamic lab list cards -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Faculty Details Panel (Full width below classrooms/labs) -->
+            <div class="deck-card-panel faculty-panel">
+                <h3>Faculty Directory</h3>
+                <div class="faculty-grid" id="facultyList">
+                    <!-- Dynamic faculty cards -->
+                </div>
+            </div>
+        </main>
+
+        <!-- Voice Search Listening Overlay -->
+        <div class="voice-overlay" id="voiceOverlay">
+            <div class="voice-card">
+                <div class="pulse-ring-container">
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring"></div>
+                    <div class="pulse-ring"></div>
+                    <div class="mic-large">
+                        <svg viewBox="0 0 24 24"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z" fill="currentColor"/></svg>
+                    </div>
+                </div>
+                <h3>Listening to Voice Command...</h3>
+                <p class="voice-hints">Try saying: <strong>"Navigate to CSE Room 38"</strong> or <strong>"Show AI Lab"</strong></p>
+                <div class="voice-transcript" id="voiceTranscript">"..."</div>
+                <button class="btn btn-close-voice" id="btnCloseVoice">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet Map JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- App Custom Script -->
+    <script src="script.js"></script>
+</body>
+</html>
+
 
