@@ -17,7 +17,7 @@ let map, routeLayer, userMarkerLayer;
 // Campus Data - Structured Classrooms, Labs, and Faculty (NO DUPLICATES)
 // ==========================================================================
 
-const departments = {
+let departments = {
     "CSE": {
         38: [16.70790, 74.47940],
         43: [16.70791, 74.47941],
@@ -63,7 +63,7 @@ const departments = {
     }
 };
 
-const Lab = {
+let Lab = {
     "CSE": {
         59: { name: "Project Lab", coord: [16.70795, 74.47945] },
         58: { name: "Programming Lab", coord: [16.70796, 74.47946] },
@@ -100,7 +100,7 @@ const Lab = {
     }
 };
 
-const faculty = {
+let faculty = {
     "CSE": [
         {
             name: "Dr. A. B. Patil",
@@ -244,6 +244,22 @@ const deptDisplayNames = {
     "AIDS": "AI & Data Science",
     "Library": "Central Library",
     "Admin": "Admin & Executive Offices"
+};
+
+// Emergency Services Coordinates
+let emergency = {
+    "hospital": {
+        "name": "Sharad Ayurved Hospital (Yadrav)",
+        "phone": "02322-253000",
+        "coord": [16.70582, 74.47563],
+        "description": "Right next to the SITCOE campus."
+    },
+    "police": {
+        "name": "Shivaji Nagar Police Station",
+        "phone": "0230-2432000",
+        "coord": [16.68551, 74.45861],
+        "description": "Police station serving the Yadrav/Ichalkaranji sector."
+    }
 };
 
 // ==========================================================================
@@ -722,14 +738,37 @@ function setupSearchFeature() {
             return;
         }
 
-        // Filter search database
-        const matches = flatTargets.filter(item => {
-            return item.name.toLowerCase().includes(query) || 
-                   item.type.toLowerCase().includes(query) ||
-                   item.deptCode.toLowerCase().includes(query);
-        });
-
-        renderSuggestions(matches);
+        // Attempt server-side search first, fallback to client-side local search
+        fetch(`/api/search?q=${encodeURIComponent(query)}`)
+            .then(res => res.json())
+            .then(results => {
+                // Map backend properties back to frontend format
+                const matches = results.map(item => ({
+                    name: item.name,
+                    type: item.type,
+                    deptCode: item.dept,
+                    icon: item.type.includes("Lab") ? "🔬" : item.type.includes("Faculty") ? "👨‍🏫" : item.type.includes("Classroom") ? "✏️" : "🏢",
+                    action: () => {
+                        selectDepartment(item.dept);
+                        currentDestination = item.coord;
+                        currentDestinationLabel = item.name;
+                        currentDestinationColor = item.color;
+                        arrivalSpoken = false;
+                        speakVoice(`Navigating to ${item.name}.`);
+                        drawRoute(currentDestination, currentDestinationColor, currentDestinationLabel);
+                    }
+                }));
+                renderSuggestions(matches);
+            })
+            .catch(err => {
+                console.warn("Backend search failed, using local fallback: ", err);
+                const matches = flatTargets.filter(item => {
+                    return item.name.toLowerCase().includes(query) || 
+                           item.type.toLowerCase().includes(query) ||
+                           item.deptCode.toLowerCase().includes(query);
+                });
+                renderSuggestions(matches);
+            });
     });
 
     function renderSuggestions(matches) {
@@ -810,10 +849,20 @@ function initVoiceAssistant() {
     const closeOverlayBtn = document.getElementById("btnCloseVoice");
 
     micBtn.addEventListener("click", () => {
+        const langSelect = document.getElementById("voiceLanguageSelect");
+        if (langSelect) {
+            recognition.lang = langSelect.value;
+        } else {
+            recognition.lang = 'en-US';
+        }
+        
         voiceOverlay.style.display = "flex";
         transcriptText.innerText = "Listening...";
         try {
-            recognition.start();
+            recognition.abort(); // Prevent 'already started' error if button is double-clicked
+            setTimeout(() => {
+                recognition.start();
+            }, 50);
         } catch (err) {
             console.error("Speech Recognition start error: ", err);
         }
@@ -837,10 +886,24 @@ function initVoiceAssistant() {
 
     recognition.onerror = (event) => {
         console.error("Speech Recognition Error: ", event.error);
-        transcriptText.innerText = `Error: ${event.error}. Try again.`;
+        let errorMsg = `Error: ${event.error}. Try again.`;
+        let delay = 2000;
+        
+        if (event.error === 'not-allowed') {
+            errorMsg = "🎤 Microphone permission denied or blocked. Please ensure you are running on localhost/HTTPS and allow microphone access.";
+            delay = 5000;
+        } else if (event.error === 'no-speech') {
+            errorMsg = "🔇 No speech detected. Please speak closer to your mic.";
+            delay = 3000;
+        } else if (event.error === 'network') {
+            errorMsg = "🌐 Network error: Speech recognition service unavailable. Please check your connection.";
+            delay = 4000;
+        }
+        
+        transcriptText.innerText = errorMsg;
         setTimeout(() => {
             voiceOverlay.style.display = "none";
-        }, 1500);
+        }, delay);
     };
 
     recognition.onend = () => {
@@ -850,111 +913,72 @@ function initVoiceAssistant() {
 
 // Voice Command Parser Logic
 function parseVoiceCommand(command) {
-    const text = command.toLowerCase().trim();
-    
-    // 1. Check for library
-    if (text.includes("library")) {
-        selectDepartment("Library");
-        currentDestination = departments["Library"]["121"];
-        currentDestinationLabel = "Central Library";
-        currentDestinationColor = "#3b82f6";
-        arrivalSpoken = false;
-        speakVoice("Navigating to Library.");
-        drawRoute(currentDestination, currentDestinationColor, currentDestinationLabel);
-        return;
-    }
-
-    // 2. Check for HOD office
-    if (text.includes("hod office") || text.includes("hod")) {
-        selectDepartment("CSE");
-        currentDestination = Lab["CSE"][53].coord; // HOD office CSE
-        currentDestinationLabel = "HOD Office";
-        currentDestinationColor = "#10b981";
-        arrivalSpoken = false;
-        speakVoice("Navigating to HOD Office.");
-        drawRoute(currentDestination, currentDestinationColor, currentDestinationLabel);
-        return;
-    }
-
-    // 3. Check for laboratories
-    for (let dept in Lab) {
-        for (let labId in Lab[dept]) {
-            const labName = Lab[dept][labId].name.toLowerCase();
-            if (text.includes(labName) || text.includes(labName.replace(" lab", ""))) {
-                selectDepartment(dept);
-                currentDestination = Lab[dept][labId].coord;
-                currentDestinationLabel = `${Lab[dept][labId].name} (${dept})`;
-                currentDestinationColor = "#10b981";
-                arrivalSpoken = false;
-                speakVoice(`Navigating to ${Lab[dept][labId].name}.`);
-                drawRoute(currentDestination, currentDestinationColor, currentDestinationLabel);
-                return;
-            }
-        }
-    }
-
-    // 4. Check for classrooms (e.g. "navigate to cse room 38" or "room 38")
-    for (let dept in departments) {
-        for (let roomNum in departments[dept]) {
-            const roomName = roomNum.toString().toLowerCase();
-            const roomTerm = `room ${roomName}`;
-            const roomTermShort = `room${roomName}`;
-            const isNameMatch = isNaN(roomNum) && (text.includes(roomName) || roomName.includes(text));
-            if (text.includes(roomTerm) || text.includes(roomTermShort) || 
-                (text.includes(dept.toLowerCase()) && text.includes(roomName)) || isNameMatch) {
-                selectDepartment(dept);
-                currentDestination = departments[dept][roomNum];
-                currentDestinationLabel = isNaN(roomNum) ? roomNum : `${dept} Room ${roomNum}`;
-                currentDestinationColor = "#3b82f6";
-                arrivalSpoken = false;
-                speakVoice(`Navigating to ${currentDestinationLabel}.`);
-                drawRoute(currentDestination, currentDestinationColor, currentDestinationLabel);
-                return;
-            }
-        }
-    }
-
-    // 5. Check for Faculty Cabin
-    for (let dept in faculty) {
-        for (let f of faculty[dept]) {
-            const normalizedName = f.name.toLowerCase().replace("dr. ", "").replace("prof. ", "");
-            if (text.includes(normalizedName) || text.includes(f.name.toLowerCase())) {
-                selectDepartment(dept);
-                currentDestination = f.coord;
-                currentDestinationLabel = `${f.name}'s Cabin`;
-                currentDestinationColor = "#8b5cf6";
-                arrivalSpoken = false;
-                speakVoice(`Navigating to ${f.name}'s cabin.`);
-                drawRoute(currentDestination, currentDestinationColor, currentDestinationLabel);
-                return;
-            }
-        }
-    }
-
-    // 6. Check for Department show
-    for (let dept in departments) {
-        const deptLabel = deptDisplayNames[dept].toLowerCase();
-        if (text.includes(`open ${dept.toLowerCase()}`) || text.includes(`show ${dept.toLowerCase()}`) || 
-            text.includes(dept.toLowerCase()) || text.includes(deptLabel)) {
-            selectDepartment(dept);
-            speakVoice(`Opened ${deptDisplayNames[dept]} workspace.`);
-            return;
-        }
-    }
-
-    // Fallback: If command unrecognized
-    speakVoice("Destination not found. Please try again.");
-    alert(`Voice Command parsed: "${command}"\nNo matching location or classroom was found.`);
+    // Open AI Chat Panel
+    openAIChat();
+    // Feed the transcript directly to the AI Chatbox
+    sendChatMessage(command);
 }
 
-// SpeechSynthesis wrapper
+let currentSpeechAudio = null;
+
+// SpeechSynthesis wrapper using Flask AI TTS with a native fallback
 function speakVoice(phrase) {
+    // 1. Cancel ongoing browser-native speech
     if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Terminate ongoing speech
-        const utterance = new SpeechSynthesisUtterance(phrase);
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        window.speechSynthesis.speak(utterance);
+        window.speechSynthesis.cancel();
+    }
+    
+    // 2. Stop any active audio object playing
+    if (currentSpeechAudio) {
+        currentSpeechAudio.pause();
+        currentSpeechAudio = null;
+    }
+
+    // 3. Detect language from select dropdown
+    const langSelect = document.getElementById("voiceLanguageSelect");
+    const lang = langSelect ? langSelect.value : 'en-US';
+
+    // 4. Request neural speech synthesis from Flask API
+    const url = `/api/tts?text=${encodeURIComponent(phrase)}&lang=${lang}`;
+    currentSpeechAudio = new Audio(url);
+    currentSpeechAudio.play().catch(err => {
+        console.warn("AI Speech API failed, using browser local SpeechSynthesis: ", err);
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(phrase);
+            utterance.lang = lang;
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            window.speechSynthesis.speak(utterance);
+        }
+    });
+}
+
+// Emergency routing drawer
+function navigateEmergency(type) {
+    const item = emergency[type];
+    if (!item) {
+        console.error("Emergency contact not found in database: " + type);
+        return;
+    }
+
+    currentDestination = item.coord;
+    currentDestinationLabel = item.name;
+    currentDestinationColor = "#ef4444"; // Red color indicator for emergency routes
+    arrivalSpoken = false;
+
+    speakVoice(`Navigating to nearest ${type === 'hospital' ? 'hospital' : 'police station'}, ${item.name}.`);
+    drawRoute(currentDestination, currentDestinationColor, currentDestinationLabel);
+
+    // Update GPS status panel
+    const statusText = document.getElementById("trackingStatus");
+    if (statusText) {
+        statusText.innerHTML = `⚠️ AI Routing to emergency service: ${item.name}`;
+    }
+
+    // Scroll to map view
+    const mapContainer = document.getElementById("map");
+    if (mapContainer) {
+        mapContainer.scrollIntoView({ behavior: 'smooth' });
     }
 }
 
@@ -967,4 +991,197 @@ window.addEventListener("DOMContentLoaded", () => {
     setupGPSTracking();
     setupSearchFeature();
     initVoiceAssistant();
+    loadDataFromServer();
+    setupAIChatbot();
 });
+
+// ==========================================================================
+// AI Chatbot Helper Logic & Handlers
+// ==========================================================================
+
+function loadDataFromServer() {
+    fetch('/api/data')
+        .then(res => res.json())
+        .then(data => {
+            departments = data.departments;
+            Lab = data.labs;
+            faculty = data.faculty;
+            if (data.emergency) {
+                emergency = data.emergency;
+            }
+            console.log("Database successfully synced with Python backend.");
+        })
+        .catch(err => {
+            console.warn("Could not sync with Flask API data. Running in static fallback mode.", err);
+        });
+}
+
+function setupAIChatbot() {
+    const toggleBtn = document.getElementById("btnAIChatToggle");
+    const closeBtn = document.getElementById("btnCloseAIChat");
+    const sendBtn = document.getElementById("btnAISend");
+    const chatInput = document.getElementById("aiChatInput");
+
+    if (toggleBtn) {
+        toggleBtn.addEventListener("click", toggleAIChat);
+    }
+    if (closeBtn) {
+        closeBtn.addEventListener("click", closeAIChat);
+    }
+    if (sendBtn) {
+        sendBtn.addEventListener("click", () => sendChatMessage());
+    }
+    if (chatInput) {
+        chatInput.addEventListener("keydown", (e) => {
+            if (e.key === "Enter") {
+                sendChatMessage();
+            }
+        });
+    }
+}
+
+function toggleAIChat() {
+    const panel = document.getElementById("aiChatPanel");
+    if (panel.style.display === "none") {
+        openAIChat();
+    } else {
+        closeAIChat();
+    }
+}
+
+function openAIChat() {
+    const panel = document.getElementById("aiChatPanel");
+    panel.style.display = "flex";
+    
+    // Focus the chat input box
+    const chatInput = document.getElementById("aiChatInput");
+    if (chatInput) chatInput.focus();
+}
+
+function closeAIChat() {
+    const panel = document.getElementById("aiChatPanel");
+    panel.style.display = "none";
+}
+
+function setChatQuery(query) {
+    const chatInput = document.getElementById("aiChatInput");
+    if (chatInput) {
+        chatInput.value = query;
+        sendChatMessage();
+    }
+}
+
+function sendChatMessage(text = null) {
+    const chatInput = document.getElementById("aiChatInput");
+    const messagesContainer = document.getElementById("aiChatMessages");
+    
+    const messageText = text ? text.trim() : chatInput.value.trim();
+    if (!messageText) return;
+
+    // Clear input if read from input
+    if (!text) {
+        chatInput.value = "";
+    }
+
+    // Append User Message bubble
+    appendBubble(messageText, "user");
+
+    // Append Typing Indicator
+    const typingId = appendTypingIndicator();
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+    // Send to Flask AI Endpoint
+    fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ message: messageText })
+    })
+    .then(res => res.json())
+    .then(data => {
+        // Remove typing indicator
+        removeTypingIndicator(typingId);
+
+        // Append Assistant Response
+        appendBubble(data.reply, "assistant");
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+        // Perform TTS Speak
+        const speakText = data.reply.replace(/<\/?[^>]+(>|$)/g, "");
+        speakVoice(speakText);
+
+        // If navigation target is returned, trigger map routing
+        if (data.navigation) {
+            const nav = data.navigation;
+            currentDestination = nav.coord;
+            currentDestinationLabel = nav.label;
+            currentDestinationColor = nav.color || "#3b82f6";
+            arrivalSpoken = false;
+
+            // Highlight corresponding department if available
+            if (nav.dept) {
+                selectDepartment(nav.dept);
+            }
+
+            // Draw route on Leaflet Map
+            drawRoute(currentDestination, currentDestinationColor, currentDestinationLabel);
+
+            // Visual feedback indicator
+            const statusText = document.getElementById("trackingStatus");
+            if (statusText) {
+                statusText.innerHTML = `📍 AI Navigating to: ${nav.label}`;
+            }
+
+            // Smooth scroll to the map
+            const mapContainer = document.getElementById("map");
+            if (mapContainer) {
+                mapContainer.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    })
+    .catch(err => {
+        console.error("AI chat assistant endpoint failure:", err);
+        removeTypingIndicator(typingId);
+        appendBubble("Sorry, I had trouble connecting to the AI brain. Check if the Python backend is running.", "assistant");
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    });
+}
+
+function appendBubble(content, sender) {
+    const container = document.getElementById("aiChatMessages");
+    const bubble = document.createElement("div");
+    bubble.className = `chat-message ${sender}`;
+    
+    if (sender === "assistant") {
+        let formatted = content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+        formatted = formatted.replace(/\n/g, "<br>");
+        bubble.innerHTML = formatted;
+    } else {
+        bubble.innerText = content;
+    }
+    
+    container.appendChild(bubble);
+}
+
+function appendTypingIndicator() {
+    const container = document.getElementById("aiChatMessages");
+    const indicator = document.createElement("div");
+    const id = "typing-" + Date.now();
+    indicator.id = id;
+    indicator.className = "chat-message assistant typing-indicator";
+    indicator.innerHTML = `
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+    `;
+    container.appendChild(indicator);
+    return id;
+}
+
+function removeTypingIndicator(id) {
+    const indicator = document.getElementById(id);
+    if (indicator) {
+        indicator.remove();
+    }
+}
